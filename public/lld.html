@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EthioServe Rent - Low-Level Design (LLD) Document</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 15mm 20mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1e293b;
+      background: #f8fafc;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+    .no-print {
+      position: sticky;
+      top: 0;
+      background: #0f172a;
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .no-print a, .no-print button {
+      background: #059669;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 8px;
+    }
+    .no-print button.secondary {
+      background: #334155;
+    }
+    .document-container {
+      max-width: 900px;
+      margin: 24px auto;
+      background: white;
+      padding: 50px 60px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      border-radius: 12px;
+    }
+    @media print {
+      body {
+        background: white;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .document-container {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        border-radius: 0;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 6px;
+      margin-top: 30px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #047857;
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+    p, li {
+      color: #334155;
+      font-size: 12.5px;
+      margin-bottom: 8px;
+    }
+    ul, ol {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-primary { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .badge-amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .cover-meta {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 20px 0 30px 0;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      font-size: 12px;
+    }
+    .cover-meta div strong {
+      color: #0f172a;
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .diagram-box {
+      background: #090d16;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 18px 20px;
+      border-radius: 10px;
+      overflow-x: auto;
+      margin: 14px 0;
+      line-height: 1.5;
+      border: 1px solid #1e293b;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 11.5px;
+    }
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    th {
+      background: #f8fafc;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    tr:nth-child(even) td {
+      background: #fbfcfe;
+    }
+    pre code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      background: #0f172a;
+      color: #e2e8f0;
+      display: block;
+      padding: 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+      line-height: 1.45;
+    }
+    .footer-stamp {
+      margin-top: 40px;
+      padding-top: 15px;
+      border-top: 1px solid #cbd5e1;
+      display: flex;
+      justify-content: space-between;
+      color: #64748b;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Web Header Tools (hidden on print) -->
+  <div class="no-print">
+    <div>
+      <strong>EthioServe Rent - LLD Documentation</strong>
+      <span style="opacity: 0.7; font-size: 11px; margin-left: 8px;">Version 1.0.0</span>
+    </div>
+    <div>
+      <a href="/EthioServe_Rent_LLD_Document.pdf" download="EthioServe_Rent_LLD_Document.pdf">
+        ⬇ Download PDF File
+      </a>
+      <button onclick="window.print()" class="secondary">
+        🖨 Print / Save as PDF
+      </button>
+      <a href="/" class="secondary" style="background:#475569">
+        ← Back to App
+      </a>
+    </div>
+  </div>
+
+  <div class="document-container">
+    <!-- Header -->
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span class="badge badge-primary">Low-Level Design (LLD)</span>
+          <span class="badge badge-amber">Official Architecture Doc</span>
+        </div>
+        <h1>EthioServe Rent<br><span style="font-size:19px; color:#059669; font-weight:700;">Ethiopian Rental & Landlord Digital Platform</span></h1>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-weight:800; font-size:16px; color:#0f172a;">Ethio<span style="color:#059669;">Serve</span></div>
+        <div style="font-size:10.5px; color:#64748b;">Zero Delala Platform</div>
+      </div>
+    </div>
+
+    <div class="cover-meta">
+      <div>
+        <strong>System Author & Developer</strong>
+        Mequannent Worku
+      </div>
+      <div>
+        <strong>Direct Support Hotline</strong>
+        0919798913
+      </div>
+      <div>
+        <strong>Target Deployment</strong>
+        Addis Ababa, Adama, Hawassa, Bahir Dar & Dire Dawa (Ethiopia)
+      </div>
+      <div>
+        <strong>Currency & Tech Stack</strong>
+        ETB (Ethiopian Birr) • React 19 • Node.js • PostgreSQL • Telebirr / CBE
+      </div>
+    </div>
+
+    <!-- Section 1 -->
+    <h2>1. Executive Summary & Problem-Solution</h2>
+    <p>
+      In urban Ethiopia, finding a residential or commercial rental property has historically been monopolized by informal middlemen (<em>delalas</em>). This has resulted in systemic pain points:
+    </p>
+    <ul>
+      <li><strong>Unregulated Broker Fees:</strong> Demands of up to one month's rent from both landlord and tenant.</li>
+      <li><strong>Advance Viewing Scams:</strong> Fraudsters asking for prepaid mobile money before viewing properties that do not exist.</li>
+      <li><strong>Unverified & Stolen Listings:</strong> Fake photos copied across multiple platforms without owner knowledge.</li>
+    </ul>
+    <p>
+      <strong>EthioServe Rent</strong> solves this through direct landlord-tenant communication, mandatory government ID verification (Kebele / Fayda National ID / Passport), transparent ETB pricing, and Telebirr/CBE featured monetization.
+    </p>
+
+    <!-- Section 2 -->
+    <h2>2. System High-Level & Layered Architecture</h2>
+    <div class="diagram-box">
++-------------------------------------------------------------------------+
+|                           CLIENT LAYER                                  |
+|   +--------------------------+          +---------------------------+   |
+|   |  Web SPA (React 19 /     |          |  Mobile App (Flutter)     |   |
+|   |  Vite / Tailwind CSS v4) |          |  (iOS / Android)          |   |
+|   +--------------------------+          +---------------------------+   |
++------------------------------------+------------------------------------+
+                                     |  HTTPS / REST / WebSocket (WSS)
++------------------------------------v------------------------------------+
+|                         API GATEWAY & SECURITY                          |
+|  - JWT / Auth Token Interceptor                                         |
+|  - Rate Limiting & DDOS Shield                                          |
+|  - Ethiopian Mobile Phone Validator (+251 / 09 / 07)                    |
+|  - Anti-Broker Heuristics Engine                                        |
++------------------------------------+------------------------------------+
+                                     |
++------------------------------------v------------------------------------+
+|                         APPLICATION SERVICES                            |
+|  +------------------------+  +-------------------+  +-----------------+ |
+|  | Auth & User Service    |  | Property Service  |  | Messaging Hub   | |
+|  +------------------------+  +-------------------+  +-----------------+ |
+|  +------------------------+  +-------------------+  +-----------------+ |
+|  | Identity Verif Service |  | Telebirr / CBE    |  | Fraud & Audit   | |
+|  | (OCR & Manual Review)  |  | Payment Webhook   |  | Incident Engine | |
+|  +------------------------+  +-------------------+  +-----------------+ |
++------------------------------------+------------------------------------+
+                                     |
++------------------------------------v------------------------------------+
+|                       PERSISTENCE & STORAGE                             |
+|  +------------------------------------+  +----------------------------+ |
+|  | PostgreSQL (Relational Master)     |  | Cloudinary / S3 Bucket     | |
+|  | (Users, Properties, Reviews, etc.) |  | (Encrypted ID scans, pics) | |
+|  +------------------------------------+  +----------------------------+ |
++-------------------------------------------------------------------------+
+    </div>
+
+    <!-- Section 3 -->
+    <div class="page-break"></div>
+    <h2>3. Use Case Diagram & Actor Matrix</h2>
+    <div class="diagram-box">
+                    +------------------------------------+
+                    |        ETHIOSERVE PLATFORM         |
+                    +------------------------------------+
+ [TENANT] --------> | (1) Search & Multi-Filter Houses   |
+                    | (2) View Specs & Utilities (Gen/H2O)|
+                    | (3) Direct Chat with Landlord      |
+                    | (4) Save to Favorites              |
+                    | (5) Submit Anti-Broker Fraud Report|
+                    | (6) Rate & Review Landlord         |
+                    +------------------------------------+
+
+ [LANDLORD] ------> | (7) Post Property (4-Step Wizard)  |
+                    | (8) Upload Ethiopian Kebele / ID   |
+                    | (9) Toggle Vacancy Status          |
+                    | (10) Boost via Telebirr (Gold 800) |
+                    | (11) Reply to Inquiries            |
+                    +------------------------------------+
+
+ [ADMIN] ---------> | (12) Audit & Approve Landlord IDs  |
+                    | (13) Triage Fraud & Delala Reports |
+                    | (14) De-list Counterfeit Properties|
+                    | (15) Track ETB Revenue Analytics   |
+                    +------------------------------------+
+    </div>
+
+    <!-- Section 4 -->
+    <h2>4. Class Diagram & Domain Entities</h2>
+    <div class="diagram-box">
++---------------------------+          +---------------------------+
+|          User             |          |         Property          |
++---------------------------+          +---------------------------+
+| - id: UUID                | 1      * | - id: UUID                |
+| - firstName: String       |--------->| - ownerId: UUID           |
+| - lastName: String        |          | - title: String           |
+| - email: String           |          | - rentPrice: Double (ETB) |
+| - phone: String           |          | - propertyType: Enum      |
+| - role: Enum              |          | - city: String            |
+| - isVerified: Boolean     |          | - subCity: String         |
+| + register()              |          | - bedrooms / bathrooms    |
+| + login()                 |          | - featuredTier: Enum      |
+| + submitIDVerification()  |          | - isVerified: Boolean     |
++---------------------------+          | - amenities: String[]     |
+              | 1                      +---------------------------+
+              |                                      | 1
+              | *                                    | *
++---------------------------+          +---------------------------+
+|       Conversation        |          |          Review           |
++---------------------------+          +---------------------------+
+| - id: UUID                |          | - id: UUID                |
+| - tenantId: UUID          |          | - propertyId: UUID        |
+| - landlordId: UUID        |          | - tenantId: UUID          |
+| - propertyId: UUID        |          | - rating: Integer (1-5)   |
+| + sendMessage()           |          | - comment: String         |
++---------------------------+          +---------------------------+
+    </div>
+
+    <!-- Section 5 -->
+    <h2>5. Database Relational Schema (PostgreSQL)</h2>
+    <pre><code>-- Core Tables Summary
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    first_name VARCHAR(60) NOT NULL,
+    last_name VARCHAR(60) NOT NULL,
+    email VARCHAR(120) UNIQUE NOT NULL,
+    phone VARCHAR(20) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) CHECK (role IN ('tenant', 'landlord', 'admin')),
+    status VARCHAR(20) CHECK (status IN ('active', 'suspended')),
+    is_verified_landlord BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE properties (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(200) NOT NULL,
+    rent_price NUMERIC(12, 2) NOT NULL, -- Ethiopian Birr (ETB)
+    property_type VARCHAR(40) NOT NULL,
+    bedrooms INT NOT NULL DEFAULT 1,
+    bathrooms INT NOT NULL DEFAULT 1,
+    city VARCHAR(60) NOT NULL,
+    sub_city VARCHAR(60) NOT NULL,
+    status VARCHAR(20) DEFAULT 'available',
+    featured_tier VARCHAR(20) DEFAULT 'basic', -- basic, premium (300 ETB), gold (800 ETB)
+    is_verified BOOLEAN DEFAULT FALSE,
+    amenities JSONB DEFAULT '[]'::jsonb,
+    images JSONB DEFAULT '[]'::jsonb
+);
+
+CREATE TABLE conversations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES users(id),
+    landlord_id UUID NOT NULL REFERENCES users(id),
+    property_id UUID NOT NULL REFERENCES properties(id),
+    last_message TEXT,
+    last_message_time TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);</code></pre>
+
+    <!-- Section 6 -->
+    <div class="page-break"></div>
+    <h2>6. Activity Diagrams (Business Workflows)</h2>
+
+    <h3>6.1 Tenant Property Search & Direct Inquiry</h3>
+    <div class="diagram-box">
+(Start) -> Browse/Search Addis Ababa, Hawassa, Adama, etc.
+   |
+   v
+Select Sub-City (Bole, CMC, Kazanchis) & ETB Price Range
+   |
+   v
+Inspect Details: Generator, 10,000L Water Reservoir, Landlord Rating
+   |
+   +---> [Action 1: Save to Favorites]
+   +---> [Action 2: Report Broker/Scam to Admin Queue]
+   +---> [Action 3: Direct Message Landlord (Chat Window Opens)]
+             |
+             v
+         (Inspection Scheduled with Direct Landlord)
+    </div>
+
+    <h3>6.2 Landlord Verification & Admin Trust Approval</h3>
+    <div class="diagram-box">
+Landlord Submits National ID / Kebele Card / Driver License
+   |
+   v
+Verification Request -> Status: PENDING
+   |
+   v
+Admin Operations Center audits document scan
+   |
+   +--- [Legitimate & Valid] ---> Click 'Approve ID'
+   |                                 |
+   |                                 v
+   |                             Profile gains 'Verified Landlord Shield'
+   |                             Properties gain 'EthioServe Verified' Badge
+   |
+   +--- [Blurry or Expired]   ---> Click 'Reject' & Enter reason
+                                     |
+                                     v
+                                 Landlord notified with re-upload link
+    </div>
+
+    <!-- Section 7 -->
+    <h2>7. Sequence Diagram (Real-Time Messaging)</h2>
+    <div class="diagram-box">
+Tenant               Client App                Messaging Hub           Landlord
+  |                      |                           |                     |
+  |-- Click "Contact" -->|                           |                     |
+  |                      |-- GET /api/messages ----->|                     |
+  |                      |<-- Return History --------|                     |
+  |                      |                           |                     |
+  |-- Type Question ---->|                           |                     |
+  |   & Click Send       |-- POST /api/messages ---->|                     |
+  |                      |                           |-- Push Event ------>|
+  |                      |                           |   (WebSocket/SMS)   |
+  |                      |                           |                     |
+  |                      |                           |<-- Landlord Reply --|
+  |                      |<-- Live Message Influx ---|                     |
+  |<- Render Bubble -----|                           |                     |
+    </div>
+
+    <!-- Section 8 -->
+    <h2>8. RESTful API Endpoints</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Method</th>
+          <th>Endpoint</th>
+          <th>Purpose & Parameters</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Auth</strong></td>
+          <td><code>POST</code></td>
+          <td><code>/api/auth/register</code></td>
+          <td>Register tenant or landlord with Ethiopian phone & password</td>
+        </tr>
+        <tr>
+          <td><strong>Auth</strong></td>
+          <td><code>POST</code></td>
+          <td><code>/api/auth/login</code></td>
+          <td>Authenticate user & issue JWT authorization token</td>
+        </tr>
+        <tr>
+          <td><strong>Properties</strong></td>
+          <td><code>GET</code></td>
+          <td><code>/api/properties/search</code></td>
+          <td>Search: <code>city</code>, <code>subCity</code>, <code>minPrice</code>, <code>maxPrice</code>, <code>bedrooms</code></td>
+        </tr>
+        <tr>
+          <td><strong>Properties</strong></td>
+          <td><code>POST</code></td>
+          <td><code>/api/properties</code></td>
+          <td>Landlord publishes property with specs, photos & amenities</td>
+        </tr>
+        <tr>
+          <td><strong>Properties</strong></td>
+          <td><code>PUT</code></td>
+          <td><code>/api/properties/:id</code></td>
+          <td>Toggle vacancy status (<code>available</code> / <code>occupied</code>)</td>
+        </tr>
+        <tr>
+          <td><strong>Messages</strong></td>
+          <td><code>POST</code></td>
+          <td><code>/api/messages</code></td>
+          <td>Send direct inquiry to landlord for a specific property</td>
+        </tr>
+        <tr>
+          <td><strong>Verifications</strong></td>
+          <td><code>POST</code></td>
+          <td><code>/api/admin/verifications/:id/approve</code></td>
+          <td>Admin approves landlord Kebele/National ID</td>
+        </tr>
+        <tr>
+          <td><strong>Fraud Reports</strong></td>
+          <td><code>POST</code></td>
+          <td><code>/api/admin/reports/:id/resolve</code></td>
+          <td>Admin removes fraudulent listing and suspends broker account</td>
+        </tr>
+        <tr>
+          <td><strong>Boosts</strong></td>
+          <td><code>POST</code></td>
+          <td><code>/api/subscriptions/boost</code></td>
+          <td>Activate Gold (800 ETB) or Premium (300 ETB) boost via Telebirr</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Section 9 -->
+    <h2>9. Fraud Detection & Safety Engine</h2>
+    <p>
+      The platform incorporates algorithms to protect both tenants and landlords:
+    </p>
+    <ul>
+      <li><strong>Duplicate Photo Fingerprinting:</strong> Image hashes prevent rogue brokers from scraping photos and re-posting at inflated rates.</li>
+      <li><strong>Price Anomaly Heuristics:</strong> Flags properties listed at &lt; 35% of sub-city median (common advance-inspection-fee bait scam).</li>
+      <li><strong>Direct Landlord Anti-Broker Guarantee:</strong> In-app reminders that viewing inspections are 100% free with direct owners.</li>
+    </ul>
+
+    <!-- Section 10 -->
+    <h2>10. Future Upgrade Roadmap (Phases 2 - 4)</h2>
+    <ul>
+      <li><strong>Phase 2:</strong> Interactive Map Search (OpenStreetMap/Google Maps), 360° Virtual tours, and AI recommendation matching.</li>
+      <li><strong>Phase 3:</strong> Standardized digital Ethiopian tenancy contracts (ውል), digital signatures, and monthly rent escrow via Telebirr.</li>
+      <li><strong>Phase 4:</strong> Commercial office leasing portal and short-term serviced apartments (Ethiopian Airbnb alternative).</li>
+    </ul>
+
+    <!-- Footer Stamp -->
+    <div class="footer-stamp">
+      <div>
+        <strong>EthioServe Rent</strong> • Architecture Document v1.0.0
+      </div>
+      <div>
+        Developer: <strong>Mequannent Worku</strong> • Support Hotline: <strong>0919798913</strong>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

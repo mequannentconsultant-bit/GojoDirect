@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EthioServe Rent - High-Level Design (HLD) Document</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 15mm 20mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1e293b;
+      background: #f8fafc;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+    .no-print {
+      position: sticky;
+      top: 0;
+      background: #0f172a;
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .no-print a, .no-print button {
+      background: #059669;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 8px;
+    }
+    .no-print button.secondary {
+      background: #334155;
+    }
+    .document-container {
+      max-width: 900px;
+      margin: 24px auto;
+      background: white;
+      padding: 50px 60px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      border-radius: 12px;
+    }
+    @media print {
+      body {
+        background: white;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .document-container {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        border-radius: 0;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 6px;
+      margin-top: 30px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #047857;
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+    p, li {
+      color: #334155;
+      font-size: 12.5px;
+      margin-bottom: 8px;
+    }
+    ul, ol {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-primary { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .badge-amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .cover-meta {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 20px 0 30px 0;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      font-size: 12px;
+    }
+    .cover-meta div strong {
+      color: #0f172a;
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .diagram-box {
+      background: #090d16;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 18px 20px;
+      border-radius: 10px;
+      overflow-x: auto;
+      margin: 14px 0;
+      line-height: 1.5;
+      border: 1px solid #1e293b;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 11.5px;
+    }
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    th {
+      background: #f8fafc;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    tr:nth-child(even) td {
+      background: #fbfcfe;
+    }
+    .footer-stamp {
+      margin-top: 40px;
+      padding-top: 15px;
+      border-top: 1px solid #cbd5e1;
+      display: flex;
+      justify-content: space-between;
+      color: #64748b;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Web Header Tools (hidden on print) -->
+  <div class="no-print">
+    <div>
+      <strong>EthioServe Rent - HLD Documentation</strong>
+      <span style="opacity: 0.7; font-size: 11px; margin-left: 8px;">Version 1.0.0</span>
+    </div>
+    <div>
+      <a href="/EthioServe_Rent_HLD_Document.pdf" download="EthioServe_Rent_HLD_Document.pdf">
+        ⬇ Download HLD PDF
+      </a>
+      <button onclick="window.print()" class="secondary">
+        🖨 Print / Save as PDF
+      </button>
+      <a href="/" class="secondary" style="background:#475569">
+        ← Back to App
+      </a>
+    </div>
+  </div>
+
+  <div class="document-container">
+    <!-- Header -->
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span class="badge badge-primary">High-Level Design (HLD)</span>
+          <span class="badge badge-amber">System Architecture Doc</span>
+        </div>
+        <h1>EthioServe Rent<br><span style="font-size:19px; color:#059669; font-weight:700;">Ethiopian Rental & Landlord Platform</span></h1>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-weight:800; font-size:16px; color:#0f172a;">Ethio<span style="color:#059669;">Serve</span></div>
+        <div style="font-size:10.5px; color:#64748b;">Direct Landlord Network</div>
+      </div>
+    </div>
+
+    <div class="cover-meta">
+      <div>
+        <strong>System Author & Developer</strong>
+        Mequannent Worku
+      </div>
+      <div>
+        <strong>Direct Support Hotline</strong>
+        0919798913
+      </div>
+      <div>
+        <strong>Target Deployment</strong>
+        Addis Ababa, Adama, Hawassa, Bahir Dar & Dire Dawa (Ethiopia)
+      </div>
+      <div>
+        <strong>Security & Access</strong>
+        Authentication-First Gate • Role-Based Access Control (Tenant, Landlord, Admin)
+      </div>
+    </div>
+
+    <!-- Section 1 -->
+    <h2>1. Executive Overview & Problem Context</h2>
+    <p>
+      In urban Ethiopia, finding a residential or commercial rental property has historically been monopolized by informal middlemen (<em>delalas</em>). EthioServe Rent provides a direct, trustworthy alternative by enforcing verified landlord credentials, direct tenant-owner messaging, transparent ETB pricing, and integrated mobile money checkout.
+    </p>
+
+    <!-- Section 2 -->
+    <h2>2. High-Level 3-Tier Enterprise Architecture</h2>
+    <div class="diagram-box">
++-----------------------------------------------------------------------------------+
+|                                 CLIENT TIER                                       |
+|  +-----------------------------+               +-------------------------------+  |
+|  |   Web Client (React 19 SPA) |               |  Mobile Client (Flutter App)  |  |
+|  |   Vite + Tailwind CSS v4    |               |  iOS & Android Native Shell   |  |
+|  +-----------------------------+               +-------------------------------+  |
++-----------------------------------------+-----------------------------------------+
+                                          | HTTPS / REST / WSS
++-----------------------------------------v-----------------------------------------+
+|                              EDGE & SECURITY GATEWAY                              |
+|  - Cloudflare / Cloud CDN & DDoS Protection                                       |
+|  - JWT Authentication & RBAC Policy Enforcement Gate                              |
+|  - Ethiopian Mobile Number Normalizer (+251 / 09 / 07)                            |
+|  - Rate Limiting & Input Sanitization                                             |
++-----------------------------------------+-----------------------------------------+
+                                          |
++-----------------------------------------v-----------------------------------------+
+|                                APPLICATION TIER                                   |
+|  +--------------------------------+   +-----------------------------------------+ |
+|  |  Identity & Access Service     |   |  Property Catalog & Search Service      | |
+|  |  - Auth, OTP, RBAC, Profiles   |   |  - Multi-attribute filter, ETB pricing  | |
+|  +--------------------------------+   +-----------------------------------------+ |
+|  +--------------------------------+   +-----------------------------------------+ |
+|  |  Direct Communication Service  |   |  Trust & Safety / Fraud Engine          | |
+|  |  - Real-time chat & WebSocket  |   |  - Delala detection, duplicate hashing  | |
+|  +--------------------------------+   +-----------------------------------------+ |
+|  +--------------------------------+   +-----------------------------------------+ |
+|  |  Payment & Boost Gateway       |   |  Admin Operations & Audit Subsystem     | |
+|  |  - Telebirr & CBE Birr Webhooks|   |  - Document verification, de-listing    | |
+|  +--------------------------------+   +-----------------------------------------+ |
++-----------------------------------------+-----------------------------------------+
+                                          |
++-----------------------------------------v-----------------------------------------+
+|                                PERSISTENCE TIER                                   |
+|  +-----------------------------------+     +------------------------------------+ |
+|  | PostgreSQL (ACID Relational Core) |     | Redis (Session Cache & In-Memory) | |
+|  | - User, Property, Audit, Reviews  |     | - Fast search cache, message queue | |
+|  +-----------------------------------+     +------------------------------------+ |
++-----------------------------------------------------------------------------------+
+    </div>
+
+    <!-- Section 3 -->
+    <div class="page-break"></div>
+    <h2>3. Role-Based Access Control (RBAC) Architecture</h2>
+    <p>
+      The platform enforces an <strong>Authentication Gate</strong>. Every user must authenticate to access the features tailored to their role:
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Role</th>
+          <th>Core Capabilities & Access Scope</th>
+          <th>Restricted Capabilities</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Tenant (House Seeker)</strong></td>
+          <td>
+            • Explore & search properties across Ethiopian cities<br>
+            • Filter by Sub-City, Type, and ETB budget<br>
+            • Save favorite homes<br>
+            • Direct chat with Landlords & direct phone call (+251)<br>
+            • Submit star ratings and landlord reviews<br>
+            • Report fraudulent listings or broker fee demands
+          </td>
+          <td>
+            Cannot post properties, manage landlord portfolios, or access the admin control center.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Landlord (Property Owner)</strong></td>
+          <td>
+            • Access Landlord Hub dashboard<br>
+            • Post new properties via 4-step wizard<br>
+            • Manage vacancies (toggle Available vs. Occupied)<br>
+            • Boost listings to Premium (300 ETB) or Gold (800 ETB) via Telebirr/CBE<br>
+            • Submit Kebele / National ID for the Verified Landlord Shield<br>
+            • Reply to tenant inquiries directly
+          </td>
+          <td>
+            Cannot access the system administrative moderation and audit center.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Administrator (Trust & Safety)</strong></td>
+          <td>
+            • Access Admin Dashboard & real-time KPIs<br>
+            • Audit & approve/reject Landlord ID submissions<br>
+            • Triage tenant fraud reports & remove scam listings<br>
+            • Suspend/reactivate rogue user accounts<br>
+            • Monitor platform revenue generated from Telebirr/CBE boosts
+          </td>
+          <td>
+            Full system governance and moderation rights.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Section 4 -->
+    <h2>4. Core Functional Modules</h2>
+    <h3>4.1 Authentication & Profile Module</h3>
+    <p>
+      Supports login via Ethiopian phone number or email with password, role-specific registration (Tenant vs Landlord), and instant 1-click evaluation personas for testing (Almaz, Dawit, Solomon, and Abebe).
+    </p>
+
+    <h3>4.2 Property Catalog & Regional Search</h3>
+    <p>
+      Supports granular location search: Addis Ababa (Bole, Yeka, Kirkos, Arada, Nifas Silk, etc.), Hawassa, Bahir Dar, Adama, and Dire Dawa. Features verified infrastructure attributes (3-phase backup generator, water reserve tank, 24/7 security).
+    </p>
+
+    <h3>4.3 Landlord Identity Verification Subsystem</h3>
+    <p>
+      Landlords upload scans of their Kebele ID, National ID (Fayda), or Passport. The admin audits the document and grants the green <strong>Verified Landlord Shield</strong>.
+    </p>
+
+    <h3>4.4 Anti-Delala & Fraud Prevention Engine</h3>
+    <p>
+      Includes duplicate photo hash detection, price anomaly warnings (<35% of sub-city median), and direct incident reporting with instant de-listing capabilities.
+    </p>
+
+    <h3>4.5 Mobile Money & Monetization Gateway</h3>
+    <p>
+      Simulates USSD push payments with <strong>Telebirr</strong>, <strong>CBE Birr</strong>, and <strong>Chapa</strong> for 300 ETB (Premium) and 800 ETB (Gold Boost) listing promotions.
+    </p>
+
+    <!-- Footer Stamp -->
+    <div class="footer-stamp">
+      <div>
+        <strong>EthioServe Rent</strong> • High-Level Design v1.0.0
+      </div>
+      <div>
+        Developer: <strong>Mequannent Worku</strong> • Support Hotline: <strong>0919798913</strong>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

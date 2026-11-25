@@ -1,0 +1,6 @@
+{
+  "name": "EthioServe Rent",
+  "description": "Ethiopia's leading digital platform connecting verified landlords and tenants with direct messaging, fraud protection, and transparent pricing in ETB.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
